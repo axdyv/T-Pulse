@@ -7,6 +7,8 @@ import { useMotionValue, useSpring } from "motion/react"
 import { cn } from "@/lib/utils"
 
 const MOVEMENT_DAMPING = 1400
+// rotation increment per frame at full speed (smaller = slower)
+const ROTATION_INCREMENT = 0.003
 
 const GLOBE_CONFIG: COBEOptions = {
   width: 1600,
@@ -47,6 +49,13 @@ export function Globe({
   let width = 0
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const pointerInteracting = useRef<number | null>(null)
+  // pauseMotion: 0 = full speed, 1 = fully paused
+  const pauseMotion = useMotionValue(0)
+  const pauseSpring = useSpring(pauseMotion, {
+    mass: 1,
+    damping: 18,
+    stiffness: 40,
+  })
   const pointerInteractionMovement = useRef(0)
 
   const r = useMotionValue(0)
@@ -86,7 +95,11 @@ export function Globe({
       width: width * 2,
       height: width * 2,
       onRender: (state) => {
-        if (!pointerInteracting.current) phi += 0.005
+        // advance rotation only when not interacting; scale by (1 - pause)
+        const pause = pauseSpring.get()
+        if (!pointerInteracting.current && pause < 0.999) {
+          phi += ROTATION_INCREMENT * (1 - pause)
+        }
         state.phi = phi + rs.get()
         state.width = width * 2
         state.height = width * 2
@@ -112,6 +125,8 @@ export function Globe({
           "size-full opacity-0 transition-opacity duration-500 [contain:layout_paint_size]"
         )}
         ref={canvasRef}
+  onPointerEnter={() => pauseMotion.set(1)}
+  onPointerLeave={() => pauseMotion.set(0)}
         onPointerDown={(e) => {
           pointerInteracting.current = e.clientX
           updatePointerInteraction(e.clientX)
@@ -122,6 +137,20 @@ export function Globe({
         onTouchMove={(e) =>
           e.touches[0] && updateMovement(e.touches[0].clientX)
         }
+      />
+
+      {/* Blue tint overlay on top of the canvas to color the ocean while preserving light land dots */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rounded-full"
+        style={{
+          zIndex: 2,
+          mixBlendMode: "multiply",
+          opacity: 0.6,
+          background:
+            "radial-gradient(circle at 40% 35%, rgb(0, 98, 255) 0%, rgb(0, 60, 255) 45%, rgb(0, 106, 255) 75%)",
+          transition: "opacity 300ms ease",
+        }}
       />
     </div>
   )
