@@ -36,31 +36,6 @@ export default function Home() {
               </ul>
             </div>
 
-            <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Quick Controls</h3>
-              <div className="mt-3 flex flex-col gap-3">
-                <button className="w-full text-white py-2 rounded-md" style={{ backgroundColor: "var(--accent)" }}>Pause Globe</button>
-                <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md">Export Data</button>
-              </div>
-
-              <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
-                <h3 className="text-white font-semibold">Recent Events</h3>
-                <ul className="mt-3 space-y-3 text-slate-300 text-sm">
-                  <li>• New connection from Tokyo — 2m ago</li>
-                  <li>• Spike in São Paulo — 5m ago</li>
-                  <li>• Deployment triggered — 12m ago</li>
-                </ul>
-              </div>
-
-              <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
-                <h3 className="text-white font-semibold">Quick Controls</h3>
-                <div className="mt-3 flex flex-col gap-3">
-                  <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-md">Pause Globe</button>
-                  <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md">Export Data</button>
-                </div>
-              </div>
-            </div>
-
             {/* Chat Box */}
             <div className="mt-4">
               <ChatBox />
