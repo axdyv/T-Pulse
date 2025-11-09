@@ -69,7 +69,7 @@ function Earth() {
         const phi = (90 - lat) * (Math.PI / 180)
         const theta = (lon + 180) * (Math.PI / 180)
         const r = 1.001
-    const x = -r * Math.sin(phi) * Math.cos(theta) // Flip X so east/west aren’t mirrored when viewing from +Z
+        const x = r * Math.sin(phi) * Math.cos(theta)
         const y = r * Math.cos(phi)
         const z = r * Math.sin(phi) * Math.sin(theta)
         return [x, y, z] as const
@@ -199,15 +199,14 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
       <ambientLight intensity={0.7} />
       <directionalLight position={[3, 3, 3]} intensity={0.6} />
       <Earth />
-        <OrbitControls
-          ref={controlsRef}
-          enablePan={false}
-          enableZoom={true}
-          enableRotate={true}
-          // lock camera distance to keep globe "in place" and prevent right-click pan
-          minDistance={3}
-          maxDistance={3}
-        />
+      <OrbitControls
+        ref={controlsRef}
+        enablePan={true}
+        enableZoom={true}
+        enableRotate={true}
+        minDistance={1.2}
+        maxDistance={6}
+      />
     </>
   )
 }
