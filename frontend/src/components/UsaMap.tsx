@@ -54,7 +54,7 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 							.on("click", (_event, d) => { const f = d as any; console.log("Clicked state", f.id ?? f.properties?.name) })
 
 						const zoom = d3.zoom<SVGSVGElement, unknown>()
-							.scaleExtent([0.5, 8])
+							.scaleExtent([0.5, 1])
 							.on("zoom", (event) => {
 								g.attr("transform", event.transform.toString())
 

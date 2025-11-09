@@ -208,7 +208,7 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
         // lock polar angle so camera stays at equator level (only left/right rotation allowed)
         minPolarAngle={Math.PI / 2}
         maxPolarAngle={Math.PI / 2}
-        // allow left-click drag to rotate and scroll/pinch to zoom; prevent right-click pan so globe stays centered
+        // allow zoom in to trigger USA map view and zoom out
         minDistance={1.2}
         maxDistance={6}
       />
