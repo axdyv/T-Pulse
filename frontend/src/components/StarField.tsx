@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface Star {
   x: number
