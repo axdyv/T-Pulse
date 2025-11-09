@@ -14,6 +14,7 @@ interface UsaMapProps {
 // Prototype USA map (placeholder geometry). Replace mock rectangles with real TopoJSON later.
 export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 	const svgRef = useRef<SVGSVGElement>(null)
+	const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null)
 
 	useEffect(() => {
 		if (!visible) return
@@ -53,14 +54,26 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 							.on("click", (_event, d) => { const f = d as any; console.log("Clicked state", f.id ?? f.properties?.name) })
 
 						const zoom = d3.zoom<SVGSVGElement, unknown>()
-							.scaleExtent([1, 8])
-							.on("zoom", (event) => { g.attr("transform", event.transform.toString()) })
+							.scaleExtent([0.5, 8])
+							.on("zoom", (event) => { 
+								g.attr("transform", event.transform.toString())
+								
+								// Exit to globe if zoomed out below threshold
+								if (event.transform.k < 0.8 && onExit) {
+									onExit()
+								}
+							})
+						
+						zoomBehaviorRef.current = zoom
 						svg.call(zoom as unknown as d3.ZoomBehavior<SVGSVGElement, unknown>)
+						
+						// Reset zoom to identity (centered and scale 1) whenever map becomes visible
+						svg.call(zoom.transform as any, d3.zoomIdentity)
 					} catch (e) {
 						console.error("Failed loading US topology", e)
 					}
 				})()
-	}, [visible])
+	}, [visible, onExit])
 
 	return (
 		<div className={`absolute inset-0 transition-opacity duration-500 ${visible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
