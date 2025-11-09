@@ -1,17 +1,19 @@
-import { Globe } from "../components/Globe"
+import GlobeVisualization from "../components/GlobeVisualization"
 import Navbar from "../components/Navbar"
 import StatsCard from "../components/StatsCard"
 import { ChatBox } from "../components/ChatBox"
+import { StarField } from "../components/StarField"
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#060617] text-white antialiased">
+      <StarField />
       <Navbar />
 
-      <section className="max-w-7xl mx-auto px-6 py-10">
+      <section className="relative z-10 max-w-7xl mx-auto px-6 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left: Globe */}
-          <div className="lg:col-span-8 bg-gradient-to-b from-transparent to-black/40 p-6 rounded-2xl">
+          {/* Left: Interactive Globe (zoom into USA) */}
+          <div className="lg:col-span-8 bg-linear-to-b from-transparent to-black/40 p-6 rounded-2xl">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-semibold">Global Activity</h2>
@@ -23,7 +25,7 @@ export default function Home() {
             <div className="relative h-[640px] flex items-center justify-center">
               <div className="w-full h-full flex items-center justify-center">
                 <div className="w-full h-full max-w-[1000px] max-h-[1000px]">
-                  <Globe className="mx-auto" />
+                  <GlobeVisualization />
                 </div>
               </div>
             </div>
