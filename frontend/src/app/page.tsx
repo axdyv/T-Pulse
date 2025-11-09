@@ -15,30 +15,42 @@ export default function Home() {
     <main className="relative h-screen w-screen overflow-hidden bg-[#060617] text-white antialiased">
       {/* Persistent background */}
       <StarField />
-      
+
       {/* Navbar - always visible */}
       <div className="absolute top-0 left-0 right-0 z-50">
         <Navbar />
       </div>
 
-      {/* Swipe container */}
-      <motion.div
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.2}
-        dragMomentum={false}
-        onDragEnd={(e, { offset }) => {
-          // Swipe left to show dashboard (offset is negative)
-          if (offset.x < -100 && view === 'globe') {
-            setView('dashboard')
-          }
-          // Swipe right to show globe (offset is positive)
-          else if (offset.x > 100 && view === 'dashboard') {
-            setView('globe')
-          }
-        }}
-        className="relative h-full w-full"
-      >
+      {/* Navigation container (use arrow buttons to switch views) */}
+      <motion.div className="relative h-full w-full">
+
+        {/* Right arrow: go to dashboard (visible when viewing globe) */}
+        {view === 'globe' && (
+          <motion.button
+            aria-label="Open dashboard"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setView('dashboard')}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+          >
+            →
+          </motion.button>
+        )}
+
+        {/* Left arrow: return to globe (visible when viewing dashboard) */}
+        {view === 'dashboard' && (
+          <motion.button
+            aria-label="Return to globe"
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setView('globe')}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+          >
+            ←
+          </motion.button>
+        )}
         {/* Globe View - Full screen when active */}
         <motion.div
           key="globe-container"
@@ -50,7 +62,7 @@ export default function Home() {
           }}
           transition={{ type: 'spring', stiffness: 100, damping: 20 }}
           className="absolute inset-0"
-          style={{ 
+          style={{
             pointerEvents: view === 'globe' ? 'auto' : 'none',
             transformOrigin: 'center center',
             width: '100vw',
@@ -104,7 +116,7 @@ export default function Home() {
           )}
         </AnimatePresence>
 
-        {/* Swipe indicator - only show in globe view */}
+        {/* Navigation hints */}
         {view === 'globe' && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -112,30 +124,17 @@ export default function Home() {
             transition={{ delay: 1 }}
             className="absolute bottom-8 right-8 flex items-center gap-2 text-white/60 text-sm"
           >
-            <span>Swipe left for dashboard</span>
-            <motion.div
-              animate={{ x: [-5, 0, -5] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            >
-              ←
-            </motion.div>
+            <span>Use the left arrow to open dashboard</span>
           </motion.div>
         )}
 
-        {/* Back indicator - only show in dashboard view */}
         {view === 'dashboard' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="absolute bottom-8 left-8 flex items-center gap-2 text-white/60 text-sm"
           >
-            <motion.div
-              animate={{ x: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            >
-              →
-            </motion.div>
-            <span>Swipe right to return</span>
+            <span>Use the right arrow to return to globe</span>
           </motion.div>
         )}
       </motion.div>

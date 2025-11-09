@@ -55,18 +55,18 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 
 						const zoom = d3.zoom<SVGSVGElement, unknown>()
 							.scaleExtent([0.5, 8])
-							.on("zoom", (event) => { 
+							.on("zoom", (event) => {
 								g.attr("transform", event.transform.toString())
-								
+
 								// Exit to globe if zoomed out below threshold
 								if (event.transform.k < 0.8 && onExit) {
 									onExit()
 								}
 							})
-						
+
 						zoomBehaviorRef.current = zoom
 						svg.call(zoom as unknown as d3.ZoomBehavior<SVGSVGElement, unknown>)
-						
+
 						// Reset zoom to identity (centered and scale 1) whenever map becomes visible
 						svg.call(zoom.transform as any, d3.zoomIdentity)
 					} catch (e) {
@@ -77,15 +77,19 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 
 	return (
 		<div className={`absolute inset-0 transition-opacity duration-500 ${visible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-			<div className="flex items-center justify-between px-4 py-2">
+			{/* Header overlay so the SVG can occupy the full viewport */}
+			<div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2">
 				<h3 className="text-sm font-semibold text-white">United States Map (Prototype)</h3>
 				<button
 					onClick={onExit}
 					className="text-xs text-white/70 hover:text-white border border-white/30 rounded px-2 py-1"
 				>Back to Globe</button>
 			</div>
-			<svg ref={svgRef} className="w-full h-[500px]" />
-			<p className="px-4 text-xs text-white/50">Heat map layer will be added later.</p>
+
+			{/* Full-viewport SVG map */}
+			<svg ref={svgRef} className="w-full h-screen block" />
+
+			<p className="absolute bottom-4 left-4 text-xs text-white/50">Heat map layer will be added later.</p>
 		</div>
 	)
 }

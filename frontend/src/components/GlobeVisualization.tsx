@@ -129,28 +129,46 @@ function Earth() {
 
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-function Scene({ onZoomChange, targetDistance, onTargetDone, view }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void; view: 'globe' | 'usa' }) {
+function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void; view: 'globe' | 'usa'; resetSignal?: number }) {
   const { camera } = useThree()
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
   const prevViewRef = useRef<'globe' | 'usa'>(view)
   const isResettingRef = useRef(false)
 
+  // When parent requests a reset (incrementing resetSignal), re-center camera and controls
+  useEffect(() => {
+    if (typeof resetSignal === 'undefined') return
+    isResettingRef.current = true
+    // place camera a bit further back so zoom-in animation can run
+    camera.position.set(0, 0, 4)
+    camera.up.set(0, 1, 0)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+    if (controlsRef.current) {
+      controlsRef.current.target.set(0, 0, 0)
+      try { (controlsRef.current as any).reset && (controlsRef.current as any).reset() } catch (e) {}
+      controlsRef.current.update()
+    }
+    const t = setTimeout(() => { isResettingRef.current = false }, 150)
+    return () => clearTimeout(t)
+  }, [resetSignal, camera])
+
   // Reset camera and controls when transitioning FROM usa TO globe
   useEffect(() => {
     if (prevViewRef.current === 'usa' && view === 'globe') {
       isResettingRef.current = true
-      
+
       // Reset camera to default position
       camera.position.set(0, 0, 3)
       camera.lookAt(0, 0, 0)
       camera.updateProjectionMatrix()
-      
+
       // Reset OrbitControls target to center
       if (controlsRef.current) {
         controlsRef.current.target.set(0, 0, 0)
         controlsRef.current.update()
       }
-      
+
       // Allow zoom detection after a brief delay
       setTimeout(() => {
         isResettingRef.current = false
@@ -196,6 +214,8 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view }: { onZoomCha
 export default function GlobeVisualization({ active = true }: { active?: boolean }) {
   const [view, setView] = useState<'globe' | 'usa'>('globe')
   const [targetDistance, setTargetDistance] = useState<number | null>(null)
+  const [resetSignal, setResetSignal] = useState(0)
+  const prevActiveRef = useRef<boolean>(false)
 
   const handleZoomChange = useCallback((distance: number) => {
     // Hysteresis to avoid flicker; only auto-switch when not animating
@@ -206,13 +226,26 @@ export default function GlobeVisualization({ active = true }: { active?: boolean
     })
   }, [])
 
+  // Run the same entrance animation on first mount and when the globe becomes active again
+  useEffect(() => {
+    if (!prevActiveRef.current && active) {
+      // kick a reset so Scene recenters and we can zoom in
+      setResetSignal(s => s + 1)
+      // start further away, then zoom in to landing distance
+      setTargetDistance(4.0)
+      setTimeout(() => setTargetDistance(3.0), 220)
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 300)
+    }
+    prevActiveRef.current = active
+  }, [active])
+
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-screen h-screen">
       {/* Globe Layer */}
       <div className={`absolute inset-0 transition-opacity duration-500 ${view === 'usa' ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-        <Canvas key={active ? 'globe-active' : 'globe-inactive'} camera={{ position: [0, 0, 3], fov: 45 }}>
-          <Scene onZoomChange={handleZoomChange} targetDistance={targetDistance} onTargetDone={() => setTargetDistance(null)} view={view} />
-        </Canvas>
+      <Canvas key={active ? 'globe-active' : 'globe-inactive'} camera={{ position: [0, 0, 3], fov: 45 }} style={{ width: '100%', height: '100%' }}>
+        <Scene onZoomChange={handleZoomChange} targetDistance={targetDistance} onTargetDone={() => setTargetDistance(null)} view={view} resetSignal={resetSignal} />
+      </Canvas>
       </div>
 
       {/* USA Map Layer */}
