@@ -129,9 +129,35 @@ function Earth() {
 
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-function Scene({ onZoomChange, targetDistance, onTargetDone }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void }) {
+function Scene({ onZoomChange, targetDistance, onTargetDone, view }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void; view: 'globe' | 'usa' }) {
   const { camera } = useThree()
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
+  const prevViewRef = useRef<'globe' | 'usa'>(view)
+  const isResettingRef = useRef(false)
+
+  // Reset camera and controls when transitioning FROM usa TO globe
+  useEffect(() => {
+    if (prevViewRef.current === 'usa' && view === 'globe') {
+      isResettingRef.current = true
+      
+      // Reset camera to default position
+      camera.position.set(0, 0, 3)
+      camera.lookAt(0, 0, 0)
+      camera.updateProjectionMatrix()
+      
+      // Reset OrbitControls target to center
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0)
+        controlsRef.current.update()
+      }
+      
+      // Allow zoom detection after a brief delay
+      setTimeout(() => {
+        isResettingRef.current = false
+      }, 100)
+    }
+    prevViewRef.current = view
+  }, [view, camera])
 
   useFrame(() => {
     const d = camera.position.length()
@@ -144,7 +170,8 @@ function Scene({ onZoomChange, targetDistance, onTargetDone }: { onZoomChange: (
       if (Math.abs(next - targetDistance) < 0.01) {
         onTargetDone()
       }
-    } else {
+    } else if (!isResettingRef.current) {
+      // Only report zoom changes when not resetting
       onZoomChange(d)
     }
   })
@@ -166,7 +193,7 @@ function Scene({ onZoomChange, targetDistance, onTargetDone }: { onZoomChange: (
   )
 }
 
-export default function GlobeVisualization() {
+export default function GlobeVisualization({ active = true }: { active?: boolean }) {
   const [view, setView] = useState<'globe' | 'usa'>('globe')
   const [targetDistance, setTargetDistance] = useState<number | null>(null)
 
@@ -180,11 +207,11 @@ export default function GlobeVisualization() {
   }, [])
 
   return (
-    <div className="relative w-full h-[640px]">
+    <div className="relative w-full h-full">
       {/* Globe Layer */}
       <div className={`absolute inset-0 transition-opacity duration-500 ${view === 'usa' ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-        <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
-          <Scene onZoomChange={handleZoomChange} targetDistance={targetDistance} onTargetDone={() => setTargetDistance(null)} />
+        <Canvas key={active ? 'globe-active' : 'globe-inactive'} camera={{ position: [0, 0, 3], fov: 45 }}>
+          <Scene onZoomChange={handleZoomChange} targetDistance={targetDistance} onTargetDone={() => setTargetDistance(null)} view={view} />
         </Canvas>
       </div>
 
@@ -192,7 +219,12 @@ export default function GlobeVisualization() {
       <UsaMap visible={view === 'usa'} onExit={() => { setView('globe'); setTargetDistance(2.6) }} />
       {view !== 'usa' && (
         <div className="absolute bottom-4 left-4 text-xs text-white/60 bg-black/30 px-2 py-1 rounded">
-          Scroll / pinch to zoom. Zoom in to view USA states.
+          Scroll / pinch to zoom in to view USA states.
+        </div>
+      )}
+      {view === 'usa' && (
+        <div className="absolute bottom-4 left-4 text-xs text-white/60 bg-black/30 px-2 py-1 rounded">
+          Zoom out or use Back button to return to globe.
         </div>
       )}
     </div>
