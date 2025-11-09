@@ -127,10 +127,15 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void; view: 'globe' | 'usa'; resetSignal?: number }) {
   const { camera, gl } = useThree()
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
+  const globeGroupRef = useRef<THREE.Group | null>(null)
   const prevViewRef = useRef<'globe' | 'usa'>(view)
   const isResettingRef = useRef(false)
   const [isOverGlobe, setIsOverGlobe] = useState(true)
   const [isPointerDown, setIsPointerDown] = useState(false)
+  // Auto-spin state
+  const BASE_SPIN = 0.18 // radians per second
+  const [spinSpeed, setSpinSpeed] = useState(BASE_SPIN)
+  const [targetSpin, setTargetSpin] = useState(BASE_SPIN)
 
   // When parent requests a reset (incrementing resetSignal), re-center camera and controls
   useEffect(() => {
@@ -176,6 +181,15 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
 
   useFrame(() => {
     const d = camera.position.length()
+    // Ease spin speed toward target
+    setSpinSpeed(prev => THREE.MathUtils.lerp(prev, targetSpin, 0.05))
+
+    // Apply auto-rotation when on globe view and not resetting
+    if (view === 'globe' && globeGroupRef.current && !isResettingRef.current) {
+      // rotate around Y axis only
+      const delta = (typeof performance !== 'undefined' ? 1 / 60 : 1 / 60)
+      globeGroupRef.current.rotation.y += spinSpeed * delta
+    }
     // Animate camera to a target distance if requested
     if (targetDistance) {
       const next = THREE.MathUtils.lerp(d, targetDistance, 0.08)
@@ -205,6 +219,14 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
     }
   }, [gl, isOverGlobe, isPointerDown, view])
 
+  // Spin control based on hover and pointer state
+  useEffect(() => {
+    if (view !== 'globe') { setTargetSpin(0); return }
+    if (isPointerDown) { setTargetSpin(0); return }
+    // On hover, slow to stop; on leave, resume base
+    setTargetSpin(isOverGlobe ? 0 : BASE_SPIN)
+  }, [isOverGlobe, isPointerDown, view])
+
   return (
     <>
       <ambientLight intensity={1.2} />
@@ -212,7 +234,7 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
       <directionalLight position={[-3, 2, -3]} intensity={0.8} />
       <pointLight position={[0, 5, 0]} intensity={0.5} />
       {/* Rotate globe to center North America and tilt it toward the viewer */}
-      <group rotation={[THREE.MathUtils.degToRad(5), THREE.MathUtils.degToRad(100), 0]}>
+      <group ref={globeGroupRef} rotation={[THREE.MathUtils.degToRad(5), THREE.MathUtils.degToRad(100), 0]}>
           <Earth
             onPointerEnter={() => setIsOverGlobe(true)}
             onPointerLeave={() => { setIsOverGlobe(false); setIsPointerDown(false) }}
