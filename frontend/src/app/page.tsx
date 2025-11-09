@@ -4,8 +4,7 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import GlobeVisualization from "../components/GlobeVisualization"
 import Navbar from "../components/Navbar"
-import StatsCard from "../components/StatsCard"
-import { ChatBox } from "../components/ChatBox"
+import DashboardLayout from "../components/DashboardLayout"
 import { StarField } from "../components/StarField"
 
 export default function Home() {
@@ -16,7 +15,7 @@ export default function Home() {
       {/* Persistent background */}
       <StarField />
 
-      {/* Navbar - always visible */}
+      {/* Global Navbar */}
       <div className="absolute top-0 left-0 right-0 z-50">
         <Navbar />
       </div>
@@ -80,38 +79,9 @@ export default function Home() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0 }}
               transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-              className="absolute inset-0 flex items-center justify-center px-8 md:px-16"
+              className="absolute inset-0"
             >
-              <div className="max-w-6xl w-full h-full flex items-center">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
-                  {/* Dashboard widgets */}
-                  <div className="space-y-6">
-                    <div>
-                      <h2 className="text-3xl font-semibold mb-2">Global Activity</h2>
-                      <p className="text-slate-400">Live connections and hotspots around the world</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <StatsCard title="Active Connections" value="1,248" delta="+4.2%" />
-                      <StatsCard title="Throughput" value="12.4k" delta="+1.1%" />
-                    </div>
-
-                    <div className="bg-slate-800/60 border border-slate-700 p-6 rounded-lg">
-                      <h3 className="text-white font-semibold text-lg mb-4">Recent Events</h3>
-                      <ul className="space-y-3 text-slate-300 text-sm">
-                        <li>• New connection from Tokyo — 2m ago</li>
-                        <li>• Spike in São Paulo — 5m ago</li>
-                        <li>• Deployment triggered — 12m ago</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Chat Box */}
-                  <div className="flex items-center">
-                    <ChatBox />
-                  </div>
-                </div>
-              </div>
+              <DashboardLayout hideHeader />
             </motion.div>
           )}
         </AnimatePresence>
