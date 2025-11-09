@@ -1,5 +1,6 @@
 import Navbar from "../components/Navbar"
 import StatsCard from "../components/StatsCard"
+import { ChatBox } from "../components/ChatBox"
 
 export default function Home() {
   return (
@@ -35,12 +36,9 @@ export default function Home() {
               </ul>
             </div>
 
-            <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Quick Controls</h3>
-              <div className="mt-3 flex flex-col gap-3">
-                <button className="w-full text-white py-2 rounded-md" style={{ backgroundColor: "var(--accent)" }}>Pause Globe</button>
-                <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md">Export Data</button>
-              </div>
+            {/* Chat Box */}
+            <div className="mt-4">
+              <ChatBox />
             </div>
           </aside>
         </div>

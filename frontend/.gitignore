@@ -8,6 +8,11 @@
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
+
+# env files
+.env
+.env.local
+.env.*.local
 !.yarn/versions
 
 # testing
