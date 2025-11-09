@@ -110,32 +110,40 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 
 						// establish websocket for live points
 						const WS_URL = process.env.NEXT_PUBLIC_API_WS_URL || 'ws://localhost:8000/ws/feed'
+						console.log('[UsaMap] Connecting to WebSocket:', WS_URL)
 						try {
 							const ws = new WebSocket(WS_URL)
 							wsRef.current = ws
+							ws.onopen = () => console.log('[UsaMap] WebSocket connected!')
 											ws.onmessage = (ev) => {
 								try {
 									const msg = JSON.parse(ev.data)
+									console.log('[UsaMap] Received:', msg.type, 'count:', msg.data?.length || 0)
 									if (msg?.type === 'tweets' && Array.isArray(msg.data)) {
 										const now = Date.now() / 1000
+										let added = 0
 										// append valid points and prune >60s
 										for (const t of msg.data) {
 											const lat = typeof t.lat === 'number' ? t.lat : null
 											const lon = typeof t.lon === 'number' ? t.lon : null
 											const s = typeof t.sentiment_score === 'number' ? t.sentiment_score : null
-											const ts = typeof t.timestamp === 'number' ? t.timestamp : now
+											// Always use current time instead of tweet timestamp (which may be old synthetic data)
 											if (lat !== null && lon !== null && s !== null) {
-												pointsRef.current.push({lat, lon, sentiment: s, ts})
+												pointsRef.current.push({lat, lon, sentiment: s, ts: now})
+												added++
 											}
 										}
 										// keep 60s rolling
-										const cutoff = (Date.now()/1000) - 60
+										const cutoff = now - 60
+										const before = pointsRef.current.length
 										pointsRef.current = pointsRef.current.filter(p => p.ts >= cutoff)
+										console.log(`[UsaMap] Added ${added}, pruned ${before - pointsRef.current.length}, total: ${pointsRef.current.length}`)
 										drawHeatmap()
 														}
 													} catch { /* ignore */ }
 							}
-							ws.onerror = () => { /* ignore for now */ }
+							ws.onerror = (err) => console.error('[UsaMap] WS error:', err)
+							ws.onclose = () => console.log('[UsaMap] WS closed')
 						} catch (e) {
 							console.error('WS connect failed', e)
 						}
