@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import StatsCard from "./StatsCard"
 import { ChatBox } from "./ChatBox"
 import SatisfactionMeter from "./SatisfactionMeter"
@@ -17,22 +17,64 @@ function Panel({ title, children, className = "" }: { title: string; children: R
 }
 
 export default function DashboardLayout({ hideHeader = false }: { hideHeader?: boolean }) {
-  // Mock satisfaction score - will be replaced with real API call
-  const [satisfactionScore, setSatisfactionScore] = useState(0.45)
+  // Real-time satisfaction score from backend
+  const [satisfactionScore, setSatisfactionScore] = useState(0)
+  const sentimentSumRef = useRef(0)
+  const countRef = useRef(0)
 
-  // Simulate live updates (remove this when connecting to real backend)
+  // Connect to WebSocket and calculate average satisfaction
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate small fluctuations in satisfaction
-      setSatisfactionScore(prev => {
-        const change = (Math.random() - 0.5) * 0.1
-        const newScore = prev + change
-        // Keep within bounds -1 to 1
-        return Math.max(-1, Math.min(1, newScore))
-      })
-    }, 5000) // Update every 5 seconds
+    const wsUrl = process.env.NEXT_PUBLIC_API_WS_URL || 'ws://localhost:8000/ws/feed'
+    let ws: WebSocket | null = null
 
-    return () => clearInterval(interval)
+    const connect = () => {
+      try {
+        ws = new WebSocket(wsUrl)
+        
+        ws.onopen = () => {
+          console.log('[DashboardLayout] WebSocket connected')
+        }
+
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data)
+            if (msg?.type === 'tweets' && Array.isArray(msg.data)) {
+              // Calculate running average of sentiment scores
+              for (const tweet of msg.data) {
+                if (typeof tweet.sentiment_score === 'number') {
+                  sentimentSumRef.current += tweet.sentiment_score
+                  countRef.current++
+                }
+              }
+              
+              if (countRef.current > 0) {
+                const avgSentiment = sentimentSumRef.current / countRef.current
+                setSatisfactionScore(avgSentiment)
+                console.log(`[DashboardLayout] Avg sentiment: ${avgSentiment.toFixed(3)} from ${countRef.current} tweets`)
+              }
+            }
+          } catch (err) {
+            console.error('[DashboardLayout] Parse error:', err)
+          }
+        }
+
+        ws.onerror = (err) => console.error('[DashboardLayout] WS error:', err)
+        ws.onclose = () => {
+          console.log('[DashboardLayout] WS closed, reconnecting in 3s...')
+          setTimeout(connect, 3000)
+        }
+      } catch (err) {
+        console.error('[DashboardLayout] Connection failed:', err)
+      }
+    }
+
+    connect()
+
+    return () => {
+      if (ws) {
+        ws.close()
+      }
+    }
   }, [])
 
   return (
