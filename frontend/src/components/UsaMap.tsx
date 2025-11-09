@@ -174,8 +174,7 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 
 	return (
 		<div className={`absolute inset-0 transition-opacity duration-500 ${visible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-			<div className="flex items-center justify-between px-4 py-2">
-				<h3 className="text-sm font-semibold text-white">United States Map (Prototype)</h3>
+			<div className="flex items-center justify-end px-4 py-2">
 				<button
 					onClick={onExit}
 					className="text-xs text-white/70 hover:text-white border border-white/30 rounded px-2 py-1"

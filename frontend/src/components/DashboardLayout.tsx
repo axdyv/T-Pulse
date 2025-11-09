@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useState, useRef } from "react"
-import StatsCard from "./StatsCard"
 import { ChatBox } from "./ChatBox"
 import SatisfactionMeter from "./SatisfactionMeter"
 
@@ -21,6 +20,17 @@ export default function DashboardLayout({ hideHeader = false }: { hideHeader?: b
   const [satisfactionScore, setSatisfactionScore] = useState(0)
   const sentimentSumRef = useRef(0)
   const countRef = useRef(0)
+  
+  // Live comments feed
+  const [liveComments, setLiveComments] = useState<Array<{text: string, sentiment: number, timestamp: number}>>([])
+  const commentsContainerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when new comments arrive (only scroll the container, not the page)
+  useEffect(() => {
+    if (commentsContainerRef.current) {
+      commentsContainerRef.current.scrollTop = commentsContainerRef.current.scrollHeight
+    }
+  }, [liveComments])
 
   // Connect to WebSocket and calculate average satisfaction
   useEffect(() => {
@@ -38,29 +48,68 @@ export default function DashboardLayout({ hideHeader = false }: { hideHeader?: b
         ws.onmessage = (ev) => {
           try {
             const msg = JSON.parse(ev.data)
+            console.log('[DashboardLayout] Received message:', msg)
+            console.log('[DashboardLayout] Message type:', msg?.type)
+            console.log('[DashboardLayout] Data is array?', Array.isArray(msg?.data))
+            console.log('[DashboardLayout] Data length:', msg?.data?.length)
+            
             if (msg?.type === 'tweets' && Array.isArray(msg.data)) {
+              console.log('[DashboardLayout] Processing tweets:', msg.data.length)
+              if (msg.data.length > 0) {
+                console.log('[DashboardLayout] First tweet:', JSON.stringify(msg.data[0], null, 2))
+              }
+              
               // Calculate running average of sentiment scores
               for (const tweet of msg.data) {
+                console.log('[DashboardLayout] Tweet sentiment_score:', tweet.sentiment_score, 'text:', tweet.text?.substring(0, 50))
+                
                 if (typeof tweet.sentiment_score === 'number') {
                   sentimentSumRef.current += tweet.sentiment_score
                   countRef.current++
+                  
+                  // Add to live comments feed
+                  if (tweet.text) {
+                    setLiveComments(prev => {
+                      const newComments = [...prev, {
+                        text: tweet.text,
+                        sentiment: tweet.sentiment_score,
+                        timestamp: Date.now()
+                      }]
+                      // Keep only last 50 comments
+                      return newComments.slice(-50)
+                    })
+                  } else {
+                    console.log('[DashboardLayout] Tweet missing text field')
+                  }
+                } else {
+                  console.log('[DashboardLayout] Tweet missing sentiment_score')
                 }
               }
               
               if (countRef.current > 0) {
                 const avgSentiment = sentimentSumRef.current / countRef.current
+                console.log(`[DashboardLayout] Setting satisfaction score to: ${avgSentiment.toFixed(3)}`)
                 setSatisfactionScore(avgSentiment)
                 console.log(`[DashboardLayout] Avg sentiment: ${avgSentiment.toFixed(3)} from ${countRef.current} tweets`)
               }
+            } else {
+              console.log('[DashboardLayout] Message not matching expected format')
             }
           } catch (err) {
             console.error('[DashboardLayout] Parse error:', err)
           }
         }
 
-        ws.onerror = (err) => console.error('[DashboardLayout] WS error:', err)
-        ws.onclose = () => {
-          console.log('[DashboardLayout] WS closed, reconnecting in 3s...')
+        ws.onerror = (err) => {
+          console.error('[DashboardLayout] WS error:', err)
+          console.error('[DashboardLayout] WS readyState:', ws?.readyState)
+          console.error('[DashboardLayout] WS URL:', wsUrl)
+        }
+        ws.onclose = (event) => {
+          console.log('[DashboardLayout] WS closed')
+          console.log('[DashboardLayout] Close code:', event.code)
+          console.log('[DashboardLayout] Close reason:', event.reason)
+          console.log('[DashboardLayout] Reconnecting in 3s...')
           setTimeout(connect, 3000)
         }
       } catch (err) {
@@ -103,28 +152,65 @@ export default function DashboardLayout({ hideHeader = false }: { hideHeader?: b
         )}
 
         <div className={`mx-auto max-w-7xl px-6 ${hideHeader ? 'pt-24' : 'py-6'} space-y-6`}>
-          {/* KPI row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatsCard title="Active Connections" value="1,248" delta="+4.2%" />
-            <StatsCard title="Throughput" value="12.4k" delta="+1.1%" />
-            <StatsCard title="Avg. Latency" value="72ms" delta="-3.5%" />
-            <StatsCard title="Error Rate" value="0.14%" delta="-0.02%" />
-          </div>
-
-          {/* Satisfaction Meter + Activity */}
+          {/* Satisfaction Meter + Live Chat */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-xl p-6">
               <SatisfactionMeter score={satisfactionScore} isLive={true} />
             </div>
-            <Panel title="Recent activity">
-              <ul className="space-y-3 text-sm text-slate-300">
-                <li>• New connection from Tokyo — 2m ago</li>
-                <li>• Spike in São Paulo — 5m ago</li>
-                <li>• Deployment triggered — 12m ago</li>
-                <li>• Alert resolved — 18m ago</li>
-                <li>• Dataset refreshed — 29m ago</li>
-              </ul>
-            </Panel>
+            
+            {/* Live Chat Feed */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+              <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white/90">Live Comments</h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                  <span className="text-xs text-white/60 uppercase tracking-wider">Live</span>
+                </div>
+              </div>
+              
+              {/* Scrollable chat container */}
+              <div 
+                ref={commentsContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-2 max-h-[400px]"
+              >
+                {liveComments.length === 0 ? (
+                  <div className="text-center text-white/40 text-sm py-8">
+                    Waiting for live comments...
+                  </div>
+                ) : (
+                  liveComments.map((comment, idx) => {
+                    // Color based on sentiment
+                    const sentimentColor = comment.sentiment < -0.3 
+                      ? 'text-pink-400' 
+                      : comment.sentiment > 0.3 
+                      ? 'text-green-400' 
+                      : 'text-gray-400'
+                    
+                    return (
+                      <div 
+                        key={idx} 
+                        className="animate-in slide-in-from-bottom-2 duration-300"
+                      >
+                        <div className="flex items-start gap-2 text-sm">
+                          <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
+                            comment.sentiment < -0.3 
+                              ? 'bg-pink-500' 
+                              : comment.sentiment > 0.3 
+                              ? 'bg-green-500' 
+                              : 'bg-gray-500'
+                          }`}></div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`${sentimentColor} break-words`}>
+                              {comment.text}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Geo + Assistant */}

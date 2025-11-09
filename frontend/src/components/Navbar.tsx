@@ -20,23 +20,6 @@ export function Navbar() {
             <p className="text-slate-400 text-xs">Real-time globe activity & insights</p>
           </div>
         </div>
-
-        <div className="flex items-center gap-4">
-          <ul className="hidden md:flex items-center gap-6 text-slate-300">
-            <li className="hover:text-white cursor-pointer">Overview</li>
-            <li className="hover:text-white cursor-pointer">Connections</li>
-            <li className="hover:text-white cursor-pointer">Analytics</li>
-            <li className="hover:text-white cursor-pointer">Settings</li>
-          </ul>
-
-          <button className="hidden sm:inline-flex items-center gap-2 text-white px-3 py-1.5 rounded-md text-sm"
-            style={{ backgroundColor: "var(--accent)" }}
-          >
-            New Report
-          </button>
-
-          <div className="w-9 h-9 rounded-full bg-slate-700 ring-1 ring-slate-600"></div>
-        </div>
       </nav>
     </header>
   )
