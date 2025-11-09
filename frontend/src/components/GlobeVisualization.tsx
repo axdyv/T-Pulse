@@ -196,12 +196,18 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
     <>
       <ambientLight intensity={0.7} />
       <directionalLight position={[3, 3, 3]} intensity={0.6} />
-      <Earth />
+      {/* Rotate globe to center North America and tilt it toward the viewer */}
+      <group rotation={[THREE.MathUtils.degToRad(5), THREE.MathUtils.degToRad(100), 0]}>
+        <Earth />
+      </group>
       <OrbitControls
         ref={controlsRef}
         enablePan={false}
         enableRotate={true}
         enableZoom={true}
+        // lock polar angle so camera stays at equator level (only left/right rotation allowed)
+        minPolarAngle={Math.PI / 2}
+        maxPolarAngle={Math.PI / 2}
         // allow left-click drag to rotate and scroll/pinch to zoom; prevent right-click pan so globe stays centered
         minDistance={1.2}
         maxDistance={6}
