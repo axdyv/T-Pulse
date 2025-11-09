@@ -47,10 +47,12 @@ class NLPProcessor:
         
         # Initialize Google Cloud Language client
         try:
+            logger.info("Attempting to initialize Google Cloud Language API client...")
             self.client = language_v1.LanguageServiceClient()
-            logger.info("Google Cloud Language API client initialized")
+            logger.info("Google Cloud Language API client initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize Google Cloud client: {e}")
+            logger.error(f"Failed to initialize Google Cloud client: {e}", exc_info=True)
+            logger.error(f"Make sure GOOGLE_APPLICATION_CREDENTIALS env var is set and points to valid credentials file")
             raise
         
         # Queue for processed results

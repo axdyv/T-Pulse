@@ -36,7 +36,7 @@ class RedisQueueSimulator:
         json_path: str,
         replay_duration_seconds: int = 600,
         rate_limit: int = 50,
-        redis_host: str = "localhost",
+        redis_host: str = "redis",  # Changed default from "localhost" to "redis" for Docker compatibility
         redis_port: int = 6379,
         redis_db: int = 0,
         queue_name: str = "tweet_queue",
@@ -48,7 +48,7 @@ class RedisQueueSimulator:
             json_path: Path to synthetic_tweets.json
             replay_duration_seconds: How long to replay the tweets (compression)
             rate_limit: Max tweets to add to queue per second
-            redis_host: Redis server hostname
+            redis_host: Redis server hostname (default: "redis" for Docker, use "localhost" for local dev)
             redis_port: Redis server port
             redis_db: Redis database number
             queue_name: Name of the Redis list/key for the queue
@@ -82,6 +82,11 @@ class RedisQueueSimulator:
         
         # Clear any existing queue data on init
         self._clear_queue()
+        
+        # Load tweets from JSON file
+        if not self.load_tweets():
+            logger.error("Failed to load tweets from JSON file")
+            raise ValueError(f"Could not load tweets from {json_path}")
     
     def _clear_queue(self) -> None:
         """Clear Redis queue and metadata."""
@@ -95,6 +100,10 @@ class RedisQueueSimulator:
     def load_tweets(self) -> bool:
         """Load tweets from JSON file."""
         try:
+            logger.info(f"Attempting to load tweets from: {self.json_path}")
+            logger.info(f"File exists: {self.json_path.exists()}")
+            logger.info(f"Absolute path: {self.json_path.resolve()}")
+            
             with open(self.json_path, 'r', encoding='utf-8') as f:
                 raw_data = json.load(f)
                 
@@ -155,8 +164,14 @@ class RedisQueueSimulator:
                 self.compression_ratio = 1.0
                 
             return True
+        except FileNotFoundError as e:
+            logger.error(f"Tweet file not found: {self.json_path} - {e}", exc_info=True)
+            return False
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON from {self.json_path}: {e}", exc_info=True)
+            return False
         except Exception as e:
-            logger.error(f"Failed to load tweets: {e}")
+            logger.error(f"Failed to load tweets: {e}", exc_info=True)
             return False
     
     def _get_compressed_delay(self, current_tweet, prev_tweet) -> float:
