@@ -1,4 +1,3 @@
-import { Globe } from "../components/Globe"
 import Navbar from "../components/Navbar"
 import StatsCard from "../components/StatsCard"
 import { ChatBox } from "../components/ChatBox"
@@ -18,14 +17,6 @@ export default function Home() {
                 <p className="text-slate-400 mt-1">Live connections and hotspots around the world</p>
               </div>
               <div className="text-sm text-slate-300">Updated just now</div>
-            </div>
-
-            <div className="relative h-[640px] flex items-center justify-center">
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-full h-full max-w-[1000px] max-h-[1000px]">
-                  <Globe className="mx-auto" />
-                </div>
-              </div>
             </div>
           </div>
 
