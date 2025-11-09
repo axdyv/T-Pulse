@@ -17,27 +17,9 @@ function Panel({ title, children, className = "" }: { title: string; children: R
 
 export default function DashboardLayout({ hideHeader = false }: { hideHeader?: boolean }) {
   return (
-    <div className="h-full w-full grid lg:grid-cols-[240px_1fr] gap-0">
+    <div className="h-full w-full grid lg:grid-cols-[0px_1fr] gap-0 py-4">
       {/* Sidebar */}
-      <aside className="hidden lg:flex flex-col bg-slate-950/70 border-r border-slate-800/80">
-        <div className="px-5 py-4 text-xs uppercase tracking-wider text-white/40">Navigation</div>
-        <nav className="flex-1 px-2 space-y-1">
-          {[
-            { label: "Overview" },
-            { label: "Connections" },
-            { label: "Analytics" },
-            { label: "Settings" }
-          ].map((item) => (
-            <button key={item.label} className="w-full text-left px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/5">
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="p-4">
-          <button className="w-full bg-pink-600 hover:bg-pink-500 text-white text-sm font-medium py-2 rounded-lg">
-            New Report
-          </button>
-        </div>
+      <aside className="hidden lg:flex flex-col bg-slate-950/70">
       </aside>
 
       {/* Main content */}
