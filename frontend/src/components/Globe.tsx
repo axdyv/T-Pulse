@@ -23,8 +23,7 @@ const GLOBE_CONFIG: COBEOptions = {
   mapBrightness: 1.2,
   baseColor: [1, 1, 1],
   markerColor: [251 / 255, 100 / 255, 21 / 255],
-  // use T‑Mobile magenta for subtle glow
-  glowColor: [226 / 255, 0 / 255, 116 / 255],
+  glowColor: [1, 1, 1],
   markers: [
     { location: [14.5995, 120.9842], size: 0.03 },
     { location: [19.076, 72.8777], size: 0.1 },
@@ -140,7 +139,7 @@ export function Globe({
         }
       />
 
-      {/* Magenta tint overlay on top of the canvas to give a T‑Mobile accent while preserving light land dots */}
+      {/* Blue tint overlay on top of the canvas to color the ocean while preserving light land dots */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-full"
@@ -149,7 +148,7 @@ export function Globe({
           mixBlendMode: "multiply",
           opacity: 0.6,
           background:
-            "radial-gradient(circle at 40% 35%, rgba(226,0,116,0.85) 0%, rgba(190,0,100,0.65) 45%, rgba(150,0,90,0.5) 75%)",
+            "radial-gradient(circle at 40% 35%, rgb(0, 98, 255) 0%, rgb(0, 60, 255) 45%, rgb(0, 106, 255) 75%)",
           transition: "opacity 300ms ease",
         }}
       />
