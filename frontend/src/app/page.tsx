@@ -1,6 +1,7 @@
 import { Globe } from "../components/Globe"
 import Navbar from "../components/Navbar"
 import StatsCard from "../components/StatsCard"
+import { ChatBox } from "../components/ChatBox"
 
 export default function Home() {
   return (
@@ -28,28 +29,36 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: Dashboard widgets */}
-          <aside className="lg:col-span-4 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <StatsCard title="Active Connections" value="1,248" delta="+4.2%" />
-              <StatsCard title="Throughput" value="12.4k" delta="+1.1%" />
-            </div>
-
-            <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Recent Events</h3>
-              <ul className="mt-3 space-y-3 text-slate-300 text-sm">
-                <li>• New connection from Tokyo — 2m ago</li>
-                <li>• Spike in São Paulo — 5m ago</li>
-                <li>• Deployment triggered — 12m ago</li>
-              </ul>
-            </div>
-
-            <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Quick Controls</h3>
-              <div className="mt-3 flex flex-col gap-3">
-                <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-md">Pause Globe</button>
-                <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md">Export Data</button>
+          {/* Right: Dashboard widgets and Chat */}
+          <aside className="lg:col-span-4 flex flex-col gap-6">
+            {/* Dashboard Widgets */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <StatsCard title="Active Connections" value="1,248" delta="+4.2%" />
+                <StatsCard title="Throughput" value="12.4k" delta="+1.1%" />
               </div>
+
+              <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
+                <h3 className="text-white font-semibold">Recent Events</h3>
+                <ul className="mt-3 space-y-3 text-slate-300 text-sm">
+                  <li>• New connection from Tokyo — 2m ago</li>
+                  <li>• Spike in São Paulo — 5m ago</li>
+                  <li>• Deployment triggered — 12m ago</li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-800/60 border border-slate-700 p-4 rounded-lg">
+                <h3 className="text-white font-semibold">Quick Controls</h3>
+                <div className="mt-3 flex flex-col gap-3">
+                  <button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-md">Pause Globe</button>
+                  <button className="w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-md">Export Data</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Chat Box */}
+            <div className="mt-4">
+              <ChatBox />
             </div>
           </aside>
         </div>
