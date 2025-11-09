@@ -35,18 +35,24 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 
 				// prepare canvas overlay
 				canvasEl.width = width
-				canvasEl.height = height
-				const ctx = canvasEl.getContext('2d')!
-				ctx.clearRect(0,0,width,height)
+			canvasEl.height = height
+			const ctx = canvasEl.getContext('2d')!
+			ctx.clearRect(0,0,width,height)
 
-				const colorForSentiment = (s:number) => {
-					// map [-1..1] to [0..1]
-					const t = Math.max(0, Math.min(1, (s + 1) / 2))
-					const g = Math.round(255 * t)
-					return `rgba(255, ${g}, 255, 0.22)` // alpha per point; additive blend will build intensity
-				}
+			const colorForSentiment = (s:number) => {
+				// T-Mobile color scheme: darker magenta (dissatisfied) to white (satisfied)
+				// -1 (dissatisfied) = darker magenta
+				// +1 (satisfied) = white
+				const t = Math.max(0, Math.min(1, (s + 1) / 2)) // normalize to 0..1
+				
+				// Interpolate from darker magenta (180, 0, 90) to white (255, 255, 255)
+				const r = Math.round(180 + (255 - 180) * t)
+				const g = Math.round(0 + (255 - 0) * t)
+				const b = Math.round(90 + (255 - 90) * t)
+				return `rgb(${r}, ${g}, ${b})`
+			}
 
-				const drawHeatmap = () => {
+			const drawHeatmap = () => {
 					ctx.save()
 					// apply zoom/pan transform
 					const {k,x,y} = transformRef.current
@@ -55,23 +61,30 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 					ctx.restore()
 					ctx.clearRect(0,0,canvasEl.width, canvasEl.height)
 					ctx.save()
-					ctx.setTransform(k, 0, 0, k, x, y)
-					ctx.globalCompositeOperation = 'lighter'
-					const radius = 28
-					for (const p of pointsRef.current) {
-						const xy = projection([p.lon, p.lat]) as [number, number] | null
-						if (!xy) continue
-						const [px, py] = xy
-						const grad = ctx.createRadialGradient(px, py, 0, px, py, radius)
-						const col = colorForSentiment(p.sentiment)
-						grad.addColorStop(0, col)
-						grad.addColorStop(1, 'rgba(255,255,255,0)')
-						ctx.fillStyle = grad
-						ctx.beginPath()
-						ctx.arc(px, py, radius, 0, Math.PI * 2)
-						ctx.fill()
-					}
-					ctx.restore()
+				ctx.setTransform(k, 0, 0, k, x, y)
+				// Don't use additive blending to keep circles distinct
+				ctx.globalCompositeOperation = 'source-over'
+				for (const p of pointsRef.current) {
+					const xy = projection([p.lon, p.lat]) as [number, number] | null
+					if (!xy) continue
+					const [px, py] = xy
+					// Size based on sentiment: dissatisfied (-1) = smaller, satisfied (+1) = bigger
+					const t = Math.max(0, Math.min(1, (p.sentiment + 1) / 2)) // normalize to 0..1
+					const radius = 5 + t * 5  // Range from 5px (dissatisfied) to 10px (satisfied)
+				const grad = ctx.createRadialGradient(px, py, 0, px, py, radius)
+				const col = colorForSentiment(p.sentiment)
+				// Center is full color with opacity
+				grad.addColorStop(0, col.replace('rgb', 'rgba').replace(')', ', 0.8)'))
+				// Mid fade
+				grad.addColorStop(0.5, col.replace('rgb', 'rgba').replace(')', ', 0.4)'))
+				// Fade to transparent magenta at edges (not black!)
+				grad.addColorStop(1, col.replace('rgb', 'rgba').replace(')', ', 0)'))
+				ctx.fillStyle = grad
+				ctx.beginPath()
+				ctx.arc(px, py, radius, 0, Math.PI * 2)
+				ctx.fill()
+				}
+				ctx.restore()
 				}
 
 				// Load topojson asynchronously inside an IIFE
@@ -129,6 +142,7 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 											const s = typeof t.sentiment_score === 'number' ? t.sentiment_score : null
 											// Always use current time instead of tweet timestamp (which may be old synthetic data)
 											if (lat !== null && lon !== null && s !== null) {
+												console.log(`[UsaMap] Sentiment: ${s.toFixed(3)}`)
 												pointsRef.current.push({lat, lon, sentiment: s, ts: now})
 												added++
 											}
@@ -174,7 +188,7 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 				<div className="absolute top-2 right-4 flex flex-col items-end gap-1 text-white/80 text-[11px]">
 					<div>Sentiment</div>
 					<div className="w-40 h-2 rounded-full" style={{
-						background: 'linear-gradient(to right, #ff00ff, #ffffff)'
+						background: 'linear-gradient(to right, rgb(128, 0, 128), rgb(226, 0, 116))'
 					}} />
 					<div className="flex justify-between w-40">
 						<span>-1 (dissatisfied)</span>

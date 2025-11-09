@@ -11,7 +11,7 @@ export default function Home() {
   const [view, setView] = useState<'globe' | 'dashboard'>('globe')
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-[#060617] text-white antialiased">
+    <main className="relative h-screen w-screen overflow-hidden bg-[#c5c5e2] text-white antialiased">
       {/* Persistent background */}
       <StarField />
 
