@@ -97,16 +97,6 @@ export default function Home() {
             <span>Use the left arrow to open dashboard</span>
           </motion.div>
         )}
-
-        {view === 'dashboard' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute bottom-8 left-8 flex items-center gap-2 text-white/60 text-sm"
-          >
-            <span>Use the right arrow to return to globe</span>
-          </motion.div>
-        )}
       </motion.div>
     </main>
   )
