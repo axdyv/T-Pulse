@@ -9,6 +9,12 @@ import { StarField } from "../components/StarField"
 
 export default function Home() {
   const [view, setView] = useState<'globe' | 'dashboard'>('globe')
+  const [globeResetKey, setGlobeResetKey] = useState(0)
+
+  const handleReturnToGlobe = () => {
+    setView('globe')
+    setGlobeResetKey(prev => prev + 1)
+  }
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-[#060617] text-white antialiased">
@@ -44,32 +50,23 @@ export default function Home() {
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setView('globe')}
+            onClick={handleReturnToGlobe}
             className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/70 hover:bg-black/90 border-2 border-white/30 text-white hover:bg-white/20 transition-all p-3 px-5 rounded-full"
           >
             ←
           </motion.button>
         )}
         {/* Globe View - Full screen when active */}
-        <motion.div
-          key="globe-container"
-          animate={{
-            scale: view === 'globe' ? 1 : 0.35,
-            x: view === 'globe' ? '0%' : '-45%',
-            y: view === 'globe' ? '0%' : '-35%',
-            opacity: view === 'globe' ? 1 : 0.4,
-          }}
-          transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+        <div
           className="absolute inset-0"
           style={{
             pointerEvents: view === 'globe' ? 'auto' : 'none',
-            transformOrigin: 'center center',
-            width: '100vw',
-            height: '100vh'
+            opacity: view === 'globe' ? 1 : 0,
+            transition: 'opacity 0.3s ease-in-out',
           }}
         >
-          <GlobeVisualization active={view === 'globe'} />
-        </motion.div>
+          <GlobeVisualization key={globeResetKey} active={view === 'globe'} />
+        </div>
 
         {/* Dashboard View - Slides in from right */}
         <AnimatePresence>
