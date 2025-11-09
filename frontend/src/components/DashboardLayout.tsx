@@ -1,8 +1,9 @@
 "use client"
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 import StatsCard from "./StatsCard"
 import { ChatBox } from "./ChatBox"
+import SatisfactionMeter from "./SatisfactionMeter"
 
 function Panel({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
   return (
@@ -16,6 +17,24 @@ function Panel({ title, children, className = "" }: { title: string; children: R
 }
 
 export default function DashboardLayout({ hideHeader = false }: { hideHeader?: boolean }) {
+  // Mock satisfaction score - will be replaced with real API call
+  const [satisfactionScore, setSatisfactionScore] = useState(0.45)
+
+  // Simulate live updates (remove this when connecting to real backend)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Simulate small fluctuations in satisfaction
+      setSatisfactionScore(prev => {
+        const change = (Math.random() - 0.5) * 0.1
+        const newScore = prev + change
+        // Keep within bounds -1 to 1
+        return Math.max(-1, Math.min(1, newScore))
+      })
+    }, 5000) // Update every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <div className="h-full w-full grid lg:grid-cols-[0px_1fr] gap-0 py-4">
       {/* Sidebar */}
@@ -50,13 +69,11 @@ export default function DashboardLayout({ hideHeader = false }: { hideHeader?: b
             <StatsCard title="Error Rate" value="0.14%" delta="-0.02%" />
           </div>
 
-          {/* Charts + Activity */}
+          {/* Satisfaction Meter + Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Panel title="Traffic over time" className="lg:col-span-2">
-              <div className="h-64 w-full rounded-md bg-gradient-to-br from-slate-800/50 to-slate-900/50 flex items-center justify-center text-white/40 text-sm">
-                Chart placeholder
-              </div>
-            </Panel>
+            <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+              <SatisfactionMeter score={satisfactionScore} isLive={true} />
+            </div>
             <Panel title="Recent activity">
               <ul className="space-y-3 text-sm text-slate-300">
                 <li>• New connection from Tokyo — 2m ago</li>
