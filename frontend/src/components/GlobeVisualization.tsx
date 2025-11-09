@@ -6,7 +6,6 @@ import { OrbitControls, Line, Text } from "@react-three/drei"
 import { UsaMap } from "./UsaMap"
 
 import * as THREE from 'three'
-import { TextureLoader } from 'three'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { feature } from 'topojson-client'
 import type { FeatureCollection, Geometry } from 'geojson'
@@ -56,8 +55,7 @@ function ContinentLabels() {
   )
 }
 
-function Earth() {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null)
+function Earth({ onPointerEnter, onPointerLeave, onPointerDown, onPointerUp }: { onPointerEnter: () => void; onPointerLeave: () => void; onPointerDown: () => void; onPointerUp: () => void }) {
   const continentRings = useMemo(() => {
     try {
       const landTopo: any = landData
@@ -69,7 +67,7 @@ function Earth() {
         const phi = (90 - lat) * (Math.PI / 180)
         const theta = (lon + 180) * (Math.PI / 180)
         const r = 1.001
-        const x = r * Math.sin(phi) * Math.cos(theta)
+        const x = -r * Math.sin(phi) * Math.cos(theta)
         const y = r * Math.cos(phi)
         const z = r * Math.sin(phi) * Math.sin(theta)
         return [x, y, z] as const
@@ -103,25 +101,22 @@ function Earth() {
     }
   }, [])
 
-  useEffect(() => {
-    // Load base earth texture
-    const loader = new TextureLoader()
-    loader.load('https://raw.githubusercontent.com/itsmruk/earthmaps/main/2_no_clouds_4k.jpg', t => setTexture(t))
-
-    // Build continent outlines from topojson (projected directly onto sphere via lat/long)
-  }, [])
-
   return (
     <group>
-      <mesh>
+      <mesh
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+      >
         <sphereGeometry args={[1, 128, 128]} />
-        <meshStandardMaterial map={texture ?? undefined} color={texture ? undefined : '#2b5fab'} roughness={0.9} metalness={0.05} />
+        {/* T-Mobile themed: dark grey water (#1a1a1a) with slight metallic sheen */}
+        <meshStandardMaterial color="#2a2a2a" roughness={0.7} metalness={0.2} />
       </mesh>
+      {/* Land masses in lighter grey (#404040) with T-Mobile magenta outlines (#E20074) */}
       {continentRings && continentRings.map((pts, i) => (
-        <Line key={i} points={pts} color="#38bdf8" lineWidth={2.2} transparent opacity={0.9} />
+        <Line key={i} points={pts} color="#E20074" lineWidth={2.5} transparent opacity={0.95} />
       ))}
-      {/* Continent labels for clarity */}
-      <ContinentLabels />
     </group>
   )
 }
@@ -129,12 +124,72 @@ function Earth() {
 
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
-function Scene({ onZoomChange, targetDistance, onTargetDone }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void }) {
-  const { camera } = useThree()
+function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void; view: 'globe' | 'usa'; resetSignal?: number }) {
+  const { camera, gl } = useThree()
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
+  const globeGroupRef = useRef<THREE.Group | null>(null)
+  const prevViewRef = useRef<'globe' | 'usa'>(view)
+  const isResettingRef = useRef(false)
+  const [isOverGlobe, setIsOverGlobe] = useState(true)
+  const [isPointerDown, setIsPointerDown] = useState(false)
+  // Auto-spin state
+  const BASE_SPIN = 0.18 // radians per second
+  const [spinSpeed, setSpinSpeed] = useState(BASE_SPIN)
+  const [targetSpin, setTargetSpin] = useState(BASE_SPIN)
+
+  // When parent requests a reset (incrementing resetSignal), re-center camera and controls
+  useEffect(() => {
+    if (typeof resetSignal === 'undefined') return
+    isResettingRef.current = true
+    // place camera a bit further back so zoom-in animation can run
+    camera.position.set(0, 0, 4)
+    camera.up.set(0, 1, 0)
+    camera.lookAt(0, 0, 0)
+    camera.updateProjectionMatrix()
+    if (controlsRef.current) {
+      controlsRef.current.target.set(0, 0, 0)
+      try { (controlsRef.current as any).reset && (controlsRef.current as any).reset() } catch (e) {}
+      controlsRef.current.update()
+    }
+    const t = setTimeout(() => { isResettingRef.current = false }, 150)
+    return () => clearTimeout(t)
+  }, [resetSignal, camera])
+
+  // Reset camera and controls when transitioning FROM usa TO globe
+  useEffect(() => {
+    if (prevViewRef.current === 'usa' && view === 'globe') {
+      isResettingRef.current = true
+
+      // Reset camera to default position
+      camera.position.set(0, 0, 3)
+      camera.lookAt(0, 0, 0)
+      camera.updateProjectionMatrix()
+
+      // Reset OrbitControls target to center
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0)
+        controlsRef.current.update()
+      }
+
+      // Allow zoom detection after a brief delay
+      setTimeout(() => {
+        isResettingRef.current = false
+      }, 100)
+    }
+    prevViewRef.current = view
+  }, [view, camera])
 
   useFrame(() => {
     const d = camera.position.length()
+    // Ease spin speed toward target
+    setSpinSpeed(prev => THREE.MathUtils.lerp(prev, targetSpin, 0.05))
+
+    // Apply auto-rotation when on globe view and not resetting
+    if (view === 'globe' && globeGroupRef.current && !isResettingRef.current) {
+      // rotate around Y axis only
+      const delta = (typeof performance !== 'undefined' ? 1 / 60 : 1 / 60)
+      globeGroupRef.current.rotation.y += spinSpeed * delta
+    }
     // Animate camera to a target distance if requested
     if (targetDistance) {
       const next = THREE.MathUtils.lerp(d, targetDistance, 0.08)
@@ -144,31 +199,69 @@ function Scene({ onZoomChange, targetDistance, onTargetDone }: { onZoomChange: (
       if (Math.abs(next - targetDistance) < 0.01) {
         onTargetDone()
       }
-    } else {
+    } else if (!isResettingRef.current) {
+      // Only report zoom changes when not resetting
       onZoomChange(d)
     }
   })
 
+  // Dynamic cursor updates
+  useEffect(() => {
+    if (!gl || !gl.domElement) return
+    if (view !== 'globe') {
+      gl.domElement.style.cursor = 'default'
+      return
+    }
+    if (isOverGlobe) {
+      gl.domElement.style.cursor = isPointerDown ? 'grabbing' : 'grab'
+    } else {
+      gl.domElement.style.cursor = 'default'
+    }
+  }, [gl, isOverGlobe, isPointerDown, view])
+
+  // Spin control based on hover and pointer state
+  useEffect(() => {
+    if (view !== 'globe') { setTargetSpin(0); return }
+    if (isPointerDown) { setTargetSpin(0); return }
+    // On hover, slow to stop; on leave, resume base
+    setTargetSpin(isOverGlobe ? 0 : BASE_SPIN)
+  }, [isOverGlobe, isPointerDown, view])
+
   return (
     <>
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[3, 3, 3]} intensity={0.6} />
-      <Earth />
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[5, 3, 5]} intensity={1.5} />
+      <directionalLight position={[-3, 2, -3]} intensity={0.8} />
+      <pointLight position={[0, 5, 0]} intensity={0.5} />
+      {/* Rotate globe to center North America and tilt it toward the viewer */}
+      <group ref={globeGroupRef} rotation={[THREE.MathUtils.degToRad(5), THREE.MathUtils.degToRad(100), 0]}>
+          <Earth
+            onPointerEnter={() => setIsOverGlobe(true)}
+            onPointerLeave={() => { setIsOverGlobe(false); setIsPointerDown(false) }}
+            onPointerDown={() => setIsPointerDown(true)}
+            onPointerUp={() => setIsPointerDown(false)}
+          />
+      </group>
       <OrbitControls
         ref={controlsRef}
-        enablePan={true}
+        enablePan={false}
+        enableRotate={isOverGlobe}
         enableZoom={true}
-        enableRotate={true}
+        // lock polar angle so camera stays at equator level (only left/right rotation allowed)
+        minPolarAngle={Math.PI / 2}
+        maxPolarAngle={Math.PI / 2}
+        // allow zoom in to trigger USA map view and zoom out
         minDistance={1.2}
         maxDistance={6}
       />
     </>
   )
 }
-
-export default function GlobeVisualization() {
+export default function GlobeVisualization({ active = true }: { active?: boolean }) {
   const [view, setView] = useState<'globe' | 'usa'>('globe')
   const [targetDistance, setTargetDistance] = useState<number | null>(null)
+  const [resetSignal, setResetSignal] = useState(0)
+  const prevActiveRef = useRef<boolean>(false)
 
   const handleZoomChange = useCallback((distance: number) => {
     // Hysteresis to avoid flicker; only auto-switch when not animating
@@ -179,22 +272,30 @@ export default function GlobeVisualization() {
     })
   }, [])
 
+  // Run the same entrance animation on first mount and when the globe becomes active again
+  useEffect(() => {
+    if (!prevActiveRef.current && active) {
+      // kick a reset so Scene recenters and we can zoom in
+      setResetSignal(s => s + 1)
+      // start further away, then zoom in to landing distance
+      setTargetDistance(4.0)
+      setTimeout(() => setTargetDistance(3.0), 220)
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 300)
+    }
+    prevActiveRef.current = active
+  }, [active])
+
   return (
-    <div className="relative w-full h-[640px]">
+    <div className="relative w-screen h-screen">
       {/* Globe Layer */}
       <div className={`absolute inset-0 transition-opacity duration-500 ${view === 'usa' ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-        <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
-          <Scene onZoomChange={handleZoomChange} targetDistance={targetDistance} onTargetDone={() => setTargetDistance(null)} />
-        </Canvas>
+      <Canvas key={active ? 'globe-active' : 'globe-inactive'} camera={{ position: [0, 0, 3], fov: 45 }} style={{ width: '100%', height: '100%' }}>
+        <Scene onZoomChange={handleZoomChange} targetDistance={targetDistance} onTargetDone={() => setTargetDistance(null)} view={view} resetSignal={resetSignal} />
+      </Canvas>
       </div>
 
       {/* USA Map Layer */}
       <UsaMap visible={view === 'usa'} onExit={() => { setView('globe'); setTargetDistance(2.6) }} />
-      {view !== 'usa' && (
-        <div className="absolute bottom-4 left-4 text-xs text-white/60 bg-black/30 px-2 py-1 rounded">
-          Scroll / pinch to zoom. Zoom in to view USA states.
-        </div>
-      )}
     </div>
   )
 }
