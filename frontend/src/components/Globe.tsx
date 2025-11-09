@@ -13,13 +13,13 @@ const ROTATION_INCREMENT = 0.003
 const GLOBE_CONFIG: COBEOptions = {
   width: 1600,
   height: 1600,
-  onRender: () => {},
+  onRender: () => { },
   devicePixelRatio: 2,
   phi: 0,
-  theta: 0.3,
+  theta: 0.25,
   dark: 0,
   diffuse: 0.4,
-  mapSamples: 16000,
+  mapSamples: 24000,
   mapBrightness: 1.2,
   baseColor: [1, 1, 1],
   markerColor: [251 / 255, 100 / 255, 21 / 255],
@@ -125,8 +125,8 @@ export function Globe({
           "size-full opacity-0 transition-opacity duration-500 [contain:layout_paint_size]"
         )}
         ref={canvasRef}
-  onPointerEnter={() => pauseMotion.set(1)}
-  onPointerLeave={() => pauseMotion.set(0)}
+        onPointerEnter={() => pauseMotion.set(1)}
+        onPointerLeave={() => pauseMotion.set(0)}
         onPointerDown={(e) => {
           pointerInteracting.current = e.clientX
           updatePointerInteraction(e.clientX)
