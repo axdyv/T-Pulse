@@ -6,7 +6,6 @@ import { OrbitControls, Line, Text } from "@react-three/drei"
 import { UsaMap } from "./UsaMap"
 
 import * as THREE from 'three'
-import { TextureLoader } from 'three'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { feature } from 'topojson-client'
 import type { FeatureCollection, Geometry } from 'geojson'
@@ -56,8 +55,7 @@ function ContinentLabels() {
   )
 }
 
-function Earth() {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null)
+function Earth({ onPointerEnter, onPointerLeave, onPointerDown, onPointerUp }: { onPointerEnter: () => void; onPointerLeave: () => void; onPointerDown: () => void; onPointerUp: () => void }) {
   const continentRings = useMemo(() => {
     try {
       const landTopo: any = landData
@@ -103,22 +101,21 @@ function Earth() {
     }
   }, [])
 
-  useEffect(() => {
-    // Load base earth texture
-    const loader = new TextureLoader()
-    loader.load('https://raw.githubusercontent.com/itsmruk/earthmaps/main/2_no_clouds_4k.jpg', t => setTexture(t))
-
-    // Build continent outlines from topojson (projected directly onto sphere via lat/long)
-  }, [])
-
   return (
     <group>
-      <mesh>
+      <mesh
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+      >
         <sphereGeometry args={[1, 128, 128]} />
-        <meshStandardMaterial map={texture ?? undefined} color={texture ? undefined : '#2b5fab'} roughness={0.9} metalness={0.05} />
+        {/* T-Mobile themed: dark grey water (#1a1a1a) with slight metallic sheen */}
+        <meshStandardMaterial color="#2a2a2a" roughness={0.7} metalness={0.2} />
       </mesh>
+      {/* Land masses in lighter grey (#404040) with T-Mobile magenta outlines (#E20074) */}
       {continentRings && continentRings.map((pts, i) => (
-        <Line key={i} points={pts} color="#38bdf8" lineWidth={2.2} transparent opacity={0.9} />
+        <Line key={i} points={pts} color="#E20074" lineWidth={2.5} transparent opacity={0.95} />
       ))}
     </group>
   )
@@ -128,10 +125,12 @@ function Earth() {
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 
 function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }: { onZoomChange: (distance: number) => void; targetDistance: number | null; onTargetDone: () => void; view: 'globe' | 'usa'; resetSignal?: number }) {
-  const { camera } = useThree()
+  const { camera, gl } = useThree()
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
   const prevViewRef = useRef<'globe' | 'usa'>(view)
   const isResettingRef = useRef(false)
+  const [isOverGlobe, setIsOverGlobe] = useState(true)
+  const [isPointerDown, setIsPointerDown] = useState(false)
 
   // When parent requests a reset (incrementing resetSignal), re-center camera and controls
   useEffect(() => {
@@ -192,18 +191,39 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
     }
   })
 
+  // Dynamic cursor updates
+  useEffect(() => {
+    if (!gl || !gl.domElement) return
+    if (view !== 'globe') {
+      gl.domElement.style.cursor = 'default'
+      return
+    }
+    if (isOverGlobe) {
+      gl.domElement.style.cursor = isPointerDown ? 'grabbing' : 'grab'
+    } else {
+      gl.domElement.style.cursor = 'default'
+    }
+  }, [gl, isOverGlobe, isPointerDown, view])
+
   return (
     <>
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[3, 3, 3]} intensity={0.6} />
+      <ambientLight intensity={1.2} />
+      <directionalLight position={[5, 3, 5]} intensity={1.5} />
+      <directionalLight position={[-3, 2, -3]} intensity={0.8} />
+      <pointLight position={[0, 5, 0]} intensity={0.5} />
       {/* Rotate globe to center North America and tilt it toward the viewer */}
       <group rotation={[THREE.MathUtils.degToRad(5), THREE.MathUtils.degToRad(100), 0]}>
-        <Earth />
+          <Earth
+            onPointerEnter={() => setIsOverGlobe(true)}
+            onPointerLeave={() => { setIsOverGlobe(false); setIsPointerDown(false) }}
+            onPointerDown={() => setIsPointerDown(true)}
+            onPointerUp={() => setIsPointerDown(false)}
+          />
       </group>
       <OrbitControls
         ref={controlsRef}
         enablePan={false}
-        enableRotate={true}
+        enableRotate={isOverGlobe}
         enableZoom={true}
         // lock polar angle so camera stays at equator level (only left/right rotation allowed)
         minPolarAngle={Math.PI / 2}
@@ -254,16 +274,6 @@ export default function GlobeVisualization({ active = true }: { active?: boolean
 
       {/* USA Map Layer */}
       <UsaMap visible={view === 'usa'} onExit={() => { setView('globe'); setTargetDistance(2.6) }} />
-      {view !== 'usa' && (
-        <div className="absolute bottom-4 left-4 text-xs text-white/60 bg-black/30 px-2 py-1 rounded">
-          Scroll / pinch to zoom in to view USA states.
-        </div>
-      )}
-      {view === 'usa' && (
-        <div className="absolute bottom-4 left-4 text-xs text-white/60 bg-black/30 px-2 py-1 rounded">
-          Zoom out or use Back button to return to globe.
-        </div>
-      )}
     </div>
   )
 }
