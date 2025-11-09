@@ -56,7 +56,9 @@ export const UsaMap: React.FC<UsaMapProps> = ({ visible, onExit }) => {
 						const zoom = d3.zoom<SVGSVGElement, unknown>()
 							.scaleExtent([0.5, 1])
 							.on("zoom", (event) => {
-								g.attr("transform", event.transform.toString())
+								// Only allow zoom (scale), prevent translation
+								const transform = d3.zoomIdentity.scale(event.transform.k)
+								g.attr("transform", transform.toString())
 
 								// Exit to globe if zoomed out below threshold
 								if (event.transform.k < 0.8 && onExit) {
