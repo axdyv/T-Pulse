@@ -32,7 +32,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setView('dashboard')}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-black/70 hover:bg-black/90 border-2 border-white/30 text-white hover:bg-white/20 transition-all p-3 px-5 rounded-full"
           >
             →
           </motion.button>
@@ -46,7 +46,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setView('globe')}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/40 hover:bg-black/60 text-white p-3 rounded-full"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-black/70 hover:bg-black/90 border-2 border-white/30 text-white hover:bg-white/20 transition-all p-3 px-5 rounded-full"
           >
             ←
           </motion.button>
