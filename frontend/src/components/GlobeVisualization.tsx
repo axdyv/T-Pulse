@@ -69,7 +69,7 @@ function Earth() {
         const phi = (90 - lat) * (Math.PI / 180)
         const theta = (lon + 180) * (Math.PI / 180)
         const r = 1.001
-        const x = r * Math.sin(phi) * Math.cos(theta)
+        const x = -r * Math.sin(phi) * Math.cos(theta)
         const y = r * Math.cos(phi)
         const z = r * Math.sin(phi) * Math.sin(theta)
         return [x, y, z] as const
@@ -120,8 +120,6 @@ function Earth() {
       {continentRings && continentRings.map((pts, i) => (
         <Line key={i} points={pts} color="#38bdf8" lineWidth={2.2} transparent opacity={0.9} />
       ))}
-      {/* Continent labels for clarity */}
-      <ContinentLabels />
     </group>
   )
 }
@@ -201,16 +199,16 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
       <Earth />
       <OrbitControls
         ref={controlsRef}
-        enablePan={true}
-        enableZoom={true}
+        enablePan={false}
         enableRotate={true}
+        enableZoom={true}
+        // allow left-click drag to rotate and scroll/pinch to zoom; prevent right-click pan so globe stays centered
         minDistance={1.2}
         maxDistance={6}
       />
     </>
   )
 }
-
 export default function GlobeVisualization({ active = true }: { active?: boolean }) {
   const [view, setView] = useState<'globe' | 'usa'>('globe')
   const [targetDistance, setTargetDistance] = useState<number | null>(null)
