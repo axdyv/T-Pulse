@@ -141,6 +141,14 @@ function Scene({ onZoomChange, targetDistance, onTargetDone, view, resetSignal }
   useEffect(() => {
     if (typeof resetSignal === 'undefined') return
     isResettingRef.current = true
+    // Reset globe rotation to initial position
+    if (globeGroupRef.current) {
+      globeGroupRef.current.rotation.set(
+        THREE.MathUtils.degToRad(5),
+        THREE.MathUtils.degToRad(100),
+        0
+      )
+    }
     // place camera a bit further back so zoom-in animation can run
     camera.position.set(0, 0, 4)
     camera.up.set(0, 1, 0)
